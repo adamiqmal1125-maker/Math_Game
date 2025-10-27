@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Matematik Budak-Budak</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #FFD54F, #FF7043);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      color: white;
+      text-shadow: 2px 2px #000;
+      font-size: 2em;
+    }
+    .game-container {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 400px;
+    }
+    button {
+      background: #FF9800;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover { background: #FB8C00; }
+    #question { font-size: 1.6em; margin: 15px 0; }
+    input {
+      width: 80px;
+      font-size: 1.2em;
+      text-align: center;
+      border-radius: 10px;
+      border: 2px solid #FFB300;
+    }
+    .scoreboard {
+      margin-top: 10px;
+      font-size: 1.1em;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Game Matematik Budak-Budak 🎯</h1>
+  <div class="game-container">
+    <div id="menu">
+      <p>Pilih Tahap Kesukaran:</p>
+      <button onclick="startGame(1)">Level 1️⃣ (Tambah & Tolak)</button><br>
+      <button onclick="startGame(2)">Level 2️⃣ (Darab & Bahagi)</button><br>
+      <button onclick="startGame(3)">Level 3️⃣ (Campur Semua)</button>
+      <p style="font-size:0.9em; color:gray;">Pastikan tekan salah satu butang dulu untuk aktifkan bunyi 🔊</p>
+    </div>
+
+    <div id="game" style="display:none;">
+      <p id="timer">Masa: 5:00</p>
+      <p id="question"></p>
+      <input type="number" id="answer" placeholder="Jawapan">
+      <br>
+      <button onclick="checkAnswer()">Hantar</button>
+      <div class="scoreboard">
+        <p>Skor Semasa: <span id="score">0</span></p>
+        <p>Skor Tertinggi: <span id="highScore">0</span></p>
+      </div>
+    </div>
+
+    <div id="gameOver" style="display:none;">
+      <h2>Masa Habis! ⏰</h2>
+      <p>Skor Akhir: <span id="finalScore"></span></p>
+      <button onclick="resetGame()">Main Semula 🔁</button>
+    </div>
+  </div>
+
+  <!-- Bunyi -->
+  <audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="timeUpSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+  <script>
+    let num1, num2, answer, operator, level, score = 0, highScore = localStorage.getItem("highScore") || 0;
+    let timer, timeLeft = 300;
+    document.getElementById("highScore").textContent = highScore;
+
+    function startGame(lvl) {
+      level = lvl;
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      score = 0;
+      timeLeft = 300;
+      updateTimer();
+      timer = setInterval(countdown, 1000);
+      generateQuestion();
+      // Mainkan bunyi dummy sekali untuk unlock audio
+      document.getElementById("correctSound").play().catch(()=>{});
+    }
+
+    function countdown() {
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        document.getElementById("timeUpSound").play();
+        endGame();
+      }
+    }
+
+    function updateTimer() {
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      document.getElementById("timer").textContent = `Masa: ${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+    }
+
+    function generateQuestion() {
+      num1 = Math.floor(Math.random() * 10) + 1;
+      num2 = Math.floor(Math.random() * 10) + 1;
+
+      if (level === 1) {
+        operator = Math.random() < 0.5 ? '+' : '-';
+        if (operator === '-' && num1 < num2) [num1, num2] = [num2, num1];
+      } else if (level === 2) {
+        operator = Math.random() < 0.5 ? '*' : '/';
+        if (operator === '/') num1 = num1 * num2;
+      } else {
+        const ops = ['+', '-', '*', '/'];
+        operator = ops[Math.floor(Math.random() * ops.length)];
+        if (operator === '-' && num1 < num2) [num1, num2] = [num2, num1];
+        if (operator === '/') num1 = num1 * num2;
+      }
+
+      document.getElementById("question").textContent = `${num1} ${operator} ${num2} = ?`;
+      answer = eval(`${num1}${operator}${num2}`);
+      document.getElementById("answer").value = "";
+    }
+
+    function checkAnswer() {
+      const userAns = Number(document.getElementById("answer").value);
+      if (userAns === answer) {
+        score += 10;
+        document.getElementById("correctSound").play();
+      } else {
+        score -= 5;
+        document.getElementById("wrongSound").play();
+      }
+      document.getElementById("score").textContent = score;
+      generateQuestion();
+    }
+
+    function endGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("gameOver").style.display = "block";
+      document.getElementById("finalScore").textContent = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("highScore", highScore);
+      }
+    }
+
+    function resetGame() {
+      document.getElementById("gameOver").style.display = "none";
+      document.getElementById("menu").style.display = "block";
+    }
+  </script>
+</body>
+</html>
